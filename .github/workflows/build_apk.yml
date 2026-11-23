@@ -18,16 +18,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Grant execute permission for Gradle
-        run: |
-          gradle wrapper --gradle-version 8.2
-          chmod +x gradlew
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.2'
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug
+        run: gradle assembleDebug
 
       - name: Upload KUBKOD-125 APK Artifact
         uses: actions/upload-artifact@v4
