@@ -39,7 +39,6 @@ public class MainActivity extends Activity implements SensorEventListener {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
 
-        // Прямой мост Java <-> КУБКОД для системного выбора контактов
         webView.addJavascriptInterface(new KubkodBridge(), "AndroidBridge");
 
         webView.setWebViewClient(new WebViewClient() {
@@ -55,7 +54,6 @@ public class MainActivity extends Activity implements SensorEventListener {
             }
         });
 
-        // Включаем поддержку открытия системного проводника для выбора файла .VCF
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
@@ -111,12 +109,10 @@ public class MainActivity extends Activity implements SensorEventListener {
                         String number = cursor.getString(1);
                         if (name == null) name = "Контакт";
                         if (number == null) number = "";
-                        final String safeName = name.replace("'", "\'").replace("
-", " ");
-                        final String safeNum = number.replace("'", "\'").replace("
-", " ");
+                        final String encName = Uri.encode(name);
+                        final String encNum = Uri.encode(number);
                         webView.post(() -> webView.evaluateJavascript(
-                            "if(window.onNativeContactPicked){ onNativeContactPicked('" + safeName + "', '" + safeNum + "'); }", null));
+                            "if(window.onNativeContactPicked){ onNativeContactPicked(decodeURIComponent('" + encName + "'), decodeURIComponent('" + encNum + "')); }", null));
                     }
                 } catch (Exception ignored) {}
             }
