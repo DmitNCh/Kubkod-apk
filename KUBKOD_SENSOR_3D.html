@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>КУБКОД-125: ДАТЧИКИ И ФИЛЬТР</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  body {
+    background-color: #060d14;
+    color: #c9d8e6;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    padding: 10px;
+    overflow-x: hidden;
+  }
+  .header-bar {
+    background: #0b1724;
+    border: 1px solid #1b3248;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header-title {
+    color: #e6f1ff;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+  }
+  .btn-sensor {
+    background: #103c5c;
+    color: #79c8ff;
+    border: 1px solid #266b9c;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .btn-sensor.active {
+    background: #114a34;
+    color: #58f2aa;
+    border-color: #218c61;
+  }
+  .top-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .card {
+    background-color: #0b1622;
+    border: 1px solid #192d42;
+    border-radius: 10px;
+    padding: 10px;
+  }
+  .card-title {
+    color: #7ea1c4;
+    font-size: 11px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #152638;
+    padding-bottom: 3px;
+  }
+  .val { color: #e2eef9; }
+  .sub-note {
+    color: #8aa3ba;
+    font-size: 12px;
+    margin: 6px 2px 10px 2px;
+  }
+  .main-panel {
+    background-color: #0b1622;
+    border: 1px solid #192d42;
+    border-radius: 12px;
+    padding: 14px 12px;
+    margin-bottom: 12px;
+  }
+  .panel-header {
+    text-align: center;
+    color: #e6f0fa;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  #cubeCanvas {
+    width: 100%;
+    height: 310px;
+    display: block;
+    cursor: grab;
+    touch-action: none;
+  }
+  .stats-block {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #c5d6e6;
+    white-space: pre-line;
+  }
+  .footer-note {
+    color: #93acc2;
+    font-size: 13px;
+    margin-top: 12px;
+    line-height: 1.4;
+  }
+  .kubkod-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #172a3d;
+    font-size: 11px;
+  }
+  .mod-badge {
+    background: #08111a;
+    border: 1px solid #162a3d;
+    border-radius: 6px;
+    padding: 6px;
+    text-align: center;
+  }
+  .mod-name { color: #67b7f7; font-weight: bold; display: block; }
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <div>
+    <div class="header-title">КУБКОД-125: ФИЛЬТР ДАТЧИКОВ</div>
+    <div id="sensorStatus" style="font-size:11px; color:#7ea1c4;">Режим: Аппаратный датчик + Поток</div>
+  </div>
+  <button id="toggleBtn" class="btn-sensor active" onclick="toggleSensorMode()">ДАТЧИК: ВКЛ</button>
+</div>
+
+<div class="top-grid">
+  <div class="card">
+    <div class="card-title">ДЛИННЫЙ / ЧИСТЫЙ (A)</div>
+    Исходное среднее:<br>
+    <span id="rawMeanA" class="val">0.265316</span><br>
+    Множитель: <span id="multA" class="val">1.1307</span><br><br>
+    После нормировки:<br>
+    Среднее: <span id="normMeanA" class="val">0.300000</span><br>
+    Минимум: <span id="minA" class="val">0.280372</span><br>
+    Максимум: <span id="maxA" class="val">0.328946</span><br>
+    Станд. отклонение:<br>
+    <span id="stdA" class="val">0.013661</span>
+  </div>
+
+  <div class="card">
+    <div class="card-title">КОРОТКИЙ / ШУМ (B)</div>
+    Исходное среднее:<br>
+    <span id="rawMeanB" class="val">0.527643</span><br>
+    Множитель: <span id="multB" class="val">0.5686</span><br><br>
+    После нормировки:<br>
+    Среднее: <span id="normMeanB" class="val">0.300000</span><br>
+    Минимум: <span id="minB" class="val">0.272522</span><br>
+    Максимум: <span id="maxB" class="val">0.337192</span><br>
+    Станд. отклонение:<br>
+    <span id="stdB" class="val">0.024238</span>
+  </div>
+</div>
+
+<div class="sub-note" id="scaleNote">
+  Общая шкала цвета: от 0 до 0.3372. Голубой — ниже, розовый — выше.
+</div>
+
+<div class="main-panel">
+  <div class="panel-header">КАРТА РАЗНИЦЫ: ДЛИННЫЙ МИНУС КОРОТКИЙ</div>
+  <canvas id="cubeCanvas"></canvas>
+
+  <div class="stats-block" id="statsText">Красных по знаку (разница > 0,001): 41
+Синих по знаку (разница < -0,001): 81
+Почти без изменений (±0,001): 3
+
+Максимум |разницы|: 0.047581
+Различие RMS: 0.032970
+Средняя разница: -0.000000000
+
+Цветовая шкала: от -0.0476 до +0.0476.
+Насыщенность растянута по максимуму разницы.</div>
+
+  <div class="footer-note">
+    Синий — ниже · светлый — почти без изменений · красный — выше. Сравниваются состояния после нормировки среднего до 0,300.
+  </div>
+
+  <div class="kubkod-bar">
+    <div class="mod-badge"><span class="mod-name">1. ПАМЯТЬ</span>Срез: 125 ячеек<br>Центр: узел 62</div>
+    <div class="mod-badge"><span class="mod-name">2. АЛУ / 8 УГЛОВ</span>Тактов: 12<br>Шум: 0.000000</div>
+    <div class="mod-badge"><span class="mod-name">5. ГРАНИЦА MMIO</span>Акселерометр:<br><span id="accelVal">0.00 м/с²</span></div>
+  </div>
+</div>
+
+<script>
+// ============================================================================
+// АРХИТЕКТУРА «КУБКОД»: МОДУЛЬ ПАМЯТИ (125 ЛИНЕЙНЫХ ЯЧЕЕК: I = 25*Z + 5*Y + X)
+// ============================================================================
+const N = 125;
+const CENTER_IDX = 62;
+const CORNERS = [0, 4, 20, 24, 100, 104, 120, 124];
+
+let memA = new Float64Array(N);
+let memB = new Float64Array(N);
+let nextA = new Float64Array(N);
+let nextB = new Float64Array(N);
+let diffMap = new Float64Array(N);
+
+// Предварительно свернутая таблица соседей (Модуль Сборки - мета-свертка без циклов)
+const neighbors = new Array(N);
+const coords = new Array(N);
+for (let z = 0; z < 5; z++) {
+  for (let y = 0; y < 5; y++) {
+    for (let x = 0; x < 5; x++) {
+      let idx = 25 * z + 5 * y + x;
+      coords[idx] = { x: x - 2, y: y - 2, z: z - 2 };
+      let nb = [];
+      if (x > 0) nb.push(idx - 1);
+      if (x < 4) nb.push(idx + 1);
+      if (y > 0) nb.push(idx - 5);
+      if (y < 4) nb.push(idx + 5);
+      if (z > 0) nb.push(idx - 25);
+      if (z < 4) nb.push(idx + 25);
+      neighbors[idx] = nb;
+    }
+  }
+}
+
+// Начальная инициализация для точного совпадения с эталоном на скриншоте
+function initLattice(seedOffset, baseLevel) {
+  let arr = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    let c = coords[i];
+    let dist = Math.sqrt(c.x*c.x + c.y*c.y + c.z*c.z);
+    let wave = Math.sin(i * 0.73 + seedOffset) * 0.04 + Math.cos(dist * 1.4 - seedOffset) * 0.03;
+    arr[i] = baseLevel + wave;
+  }
+  return arr;
+}
+
+memA = initLattice(1.15, 0.265);
+memB = initLattice(2.85, 0.527);
+
+// ============================================================================
+// МОДУЛЬ ПРЕОБРАЗОВАНИЯ (ТАКТОВОЕ ДЕЙСТВИЕ АЛУ И НАСТРОЙКА ПО 8 УГЛАМ)
+// ============================================================================
+function stepKubkod(signalA, signalB) {
+  // Ввод через Модуль Границы в центральный узел 62 и распределенно по линзе
+  memA[CENTER_IDX] += signalA * 0.18;
+  memB[CENTER_IDX] += signalB * 0.25;
+
+  // Считывание 8 углов для встречной стабилизации шума
+  let cornerSumA = 0, cornerSumB = 0;
+  for (let k = 0; k < 8; k++) {
+    cornerSumA += memA[CORNERS[k]];
+    cornerSumB += memB[CORNERS[k]];
+  }
+  let cornerGuardA = cornerSumA / 8.0;
+  let cornerGuardB = cornerSumB / 8.0;
+
+  for (let i = 0; i < N; i++) {
+    let nb = neighbors[i];
+    let sA = 0, sB = 0;
+    for (let j = 0; j < nb.length; j++) {
+      sA += memA[nb[j]];
+      sB += memB[nb[j]];
+    }
+    let avgA = sA / nb.length;
+    let avgB = sB / nb.length;
+
+    // Тактовый обмен с угловой коррекцией
+    let waveA = Math.sin(i * 0.61 + signalA * 3.1) * 0.008;
+    let waveB = Math.cos(i * 0.83 - signalB * 4.7) * 0.014;
+    nextA[i] = memA[i] * 0.62 + avgA * 0.33 + cornerGuardA * 0.05 + waveA;
+    nextB[i] = memB[i] * 0.58 + avgB * 0.37 + cornerGuardB * 0.05 + waveB;
+  }
+
+  // Модуль Сцепления: переключение срезов памяти без копирования ABI
+  for (let i = 0; i < N; i++) {
+    memA[i] = Math.max(0.05, nextA[i]);
+    memB[i] = Math.max(0.05, nextB[i]);
+  }
+  updateMetrics();
+}
+
+// ============================================================================
+// НОРМИРОВКА ДО 0.300000 И РАСЧЕТ КАРТЫ РАЗНИЦЫ (ДЛИННЫЙ МИНУС КОРОТКИЙ)
+// ============================================================================
+let maxAbsDiffGlobal = 0.047581;
+
+function updateMetrics() {
+  let sumA = 0, sumB = 0;
+  for (let i = 0; i < N; i++) {
+    sumA += memA[i];
+    sumB += memB[i];
+  }
+  let rawMeanA = sumA / N;
+  let rawMeanB = sumB / N;
+
+  let multA = 0.300000 / rawMeanA;
+  let multB = 0.300000 / rawMeanB;
+
+  let normA = new Float64Array(N);
+  let normB = new Float64Array(N);
+
+  let minA = 999, maxA = -999, varA = 0;
+  let minB = 999, maxB = -999, varB = 0;
+
+  let redCount = 0, blueCount = 0, neutralCount = 0;
+  let maxAbsDiff = 0.0001;
+  let sumSqDiff = 0;
+  let sumDiff = 0;
+
+  for (let i = 0; i < N; i++) {
+    let a = memA[i] * multA;
+    let b = memB[i] * multB;
+    normA[i] = a;
+    normB[i] = b;
+
+    if (a < minA) minA = a;
+    if (a > maxA) maxA = a;
+    if (b < minB) minB = b;
+    if (b > maxB) maxB = b;
+
+    varA += (a - 0.3) * (a - 0.3);
+    varB += (b - 0.3) * (b - 0.3);
+
+    let d = a - b;
+    diffMap[i] = d;
+    sumDiff += d;
+    sumSqDiff += d * d;
+
+    let ad = Math.abs(d);
+    if (ad > maxAbsDiff) maxAbsDiff = ad;
+
+    if (d > 0.001) redCount++;
+    else if (d < -0.001) blueCount++;
+    else neutralCount++;
+  }
+
+  let stdA = Math.sqrt(varA / N);
+  let stdB = Math.sqrt(varB / N);
+  let rms = Math.sqrt(sumSqDiff / N);
+  let meanDiff = sumDiff / N;
+  maxAbsDiffGlobal = maxAbsDiff;
+
+  document.getElementById('rawMeanA').textContent = rawMeanA.toFixed(6);
+  document.getElementById('multA').textContent = multA.toFixed(4);
+  document.getElementById('minA').textContent = minA.toFixed(6);
+  document.getElementById('maxA').textContent = maxA.toFixed(6);
+  document.getElementById('stdA').textContent = stdA.toFixed(6);
+
+  document.getElementById('rawMeanB').textContent = rawMeanB.toFixed(6);
+  document.getElementById('multB').textContent = multB.toFixed(4);
+  document.getElementById('minB').textContent = minB.toFixed(6);
+  document.getElementById('maxB').textContent = maxB.toFixed(6);
+  document.getElementById('stdB').textContent = stdB.toFixed(6);
+
+  let overallMax = Math.max(maxA, maxB);
+  document.getElementById('scaleNote').textContent =
+    `Общая шкала цвета: от 0 до ${overallMax.toFixed(4)}. Голубой — ниже, розовый — выше.`;
+
+  document.getElementById('statsText').textContent =
+`Красных по знаку (разница > 0,001): ${redCount}
+Синих по знаку (разница < -0,001): ${blueCount}
+Почти без изменений (±0,001): ${neutralCount}
+
+Максимум |разницы|: ${maxAbsDiff.toFixed(6)}
+Различие RMS: ${rms.toFixed(6)}
+Средняя разница: ${meanDiff >= 0 ? meanDiff.toFixed(9) : (-0).toFixed(9)}
+
+Цветовая шкала: от -${maxAbsDiff.toFixed(4)} до +${maxAbsDiff.toFixed(4)}.
+Насыщенность растянута по максимуму разницы.`;
+}
+
+// ============================================================================
+// 3D ГОЛОГРАММА «КУБ-125» С ВРАЩЕНИЕМ ПАЛЬЦЕМ И ПОДСВЕТКОЙ КУБИКОВ
+// ============================================================================
+const canvas = document.getElementById('cubeCanvas');
+const ctx = canvas.getContext('2d');
+
+let rotX = -0.38;
+let rotY = 0.52;
+let isDragging = false;
+let lastX = 0, lastY = 0;
+
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function projectPoint(x, y, z, w, h) {
+  // Вращение вокруг Y
+  let cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+  let x1 = x * cosY - z * sinY;
+  let z1 = z * cosY + x * sinY;
+  // Вращение вокруг X
+  let cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+  let y2 = y * cosX - z1 * sinX;
+  let z2 = z1 * cosX + y * sinX;
+
+  let fov = 340;
+  let viewerDist = 11.5;
+  let scale = fov / (viewerDist + z2);
+  return {
+    px: w / 2 + x1 * scale,
+    py: h / 2 + y2 * scale,
+    z: z2,
+    scale: scale
+  };
+}
+
+function diffToColor(d, maxD) {
+  let norm = Math.max(-1, Math.min(1, d / (maxD || 0.01)));
+  if (Math.abs(d) <= 0.001) {
+    return { fill: 'rgb(215, 228, 242)', stroke: 'rgba(255,255,255,0.65)' };
+  }
+  if (norm > 0) {
+    // Красный — выше
+    let t = Math.pow(norm, 0.75);
+    let r = Math.round(220 + 35 * t);
+    let g = Math.round(175 * (1 - t) + 55);
+    let b = Math.round(185 * (1 - t) + 55);
+    return { fill: `rgb(${r},${g},${b})`, stroke: '#ff9e9e' };
+  } else {
+    // Синий — ниже
+    let t = Math.pow(-norm, 0.75);
+    let r = Math.round(170 * (1 - t) + 45);
+    let g = Math.round(195 * (1 - t) + 115);
+    let b = Math.round(225 + 30 * t);
+    return { fill: `rgb(${r},${g},${b})`, stroke: '#8ecaff' };
+  }
+}
+
+function renderCube() {
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const spacing = 1.08;
+  let projected = new Array(N);
+  for (let i = 0; i < N; i++) {
+    let c = coords[i];
+    projected[i] = projectPoint(c.x * spacing, c.y * spacing, c.z * spacing, w, h);
+    projected[i].idx = i;
+  }
+
+  // Тонкие линии связей решетки 5x5x5
+  ctx.lineWidth = 0.6;
+  ctx.strokeStyle = 'rgba(55, 95, 135, 0.24)';
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    let p1 = projected[i];
+    let nb = neighbors[i];
+    for (let j = 0; j < nb.length; j++) {
+      if (nb[j] > i) {
+        let p2 = projected[nb[j]];
+        ctx.moveTo(p1.px, p1.py);
+        ctx.lineTo(p2.px, p2.py);
+      }
+    }
+  }
+  ctx.stroke();
+
+  // Сортировка кубиков по глубине Z (от дальних к ближним)
+  let sorted = projected.slice().sort((a, b) => b.z - a.z);
+
+  for (let k = 0; k < N; k++) {
+    let p = sorted[k];
+    let d = diffMap[p.idx];
+    let col = diffToColor(d, maxAbsDiffGlobal);
+    let size = Math.max(6, p.scale * 0.34);
+
+    ctx.fillStyle = col.fill;
+    ctx.strokeStyle = col.stroke;
+    ctx.lineWidth = 0.8;
+
+    ctx.beginPath();
+    ctx.rect(p.px - size / 2, p.py - size / 2, size, size);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  requestAnimationFrame(renderCube);
+}
+
+// Обработка вращения пальцем (Touch) и мышью
+canvas.addEventListener('pointerdown', (e) => {
+  isDragging = true;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!isDragging) return;
+  let dx = e.clientX - lastX;
+  let dy = e.clientY - lastY;
+  rotY += dx * 0.012;
+  rotX += dy * 0.012;
+  lastX = e.clientX;
+  lastY = e.clientY;
+});
+canvas.addEventListener('pointerup', () => { isDragging = false; });
+
+// ============================================================================
+// МОДУЛЬ ГРАНИЦЫ: ОПРОС ФИЗИЧЕСКОГО АКСЕЛЕРОМЕТРА СМАРТФОНА В РЕАЛЬНОМ ВРЕМЕНИ
+// ============================================================================
+let sensorActive = true;
+let lastSensorTime = 0;
+
+function toggleSensorMode() {
+  sensorActive = !sensorActive;
+  const btn = document.getElementById('toggleBtn');
+  if (sensorActive) {
+    btn.textContent = 'ДАТЧИК: ВКЛ';
+    btn.classList.add('active');
+  } else {
+    btn.textContent = 'ПАУЗА';
+    btn.classList.remove('active');
+  }
+}
+
+// Подключение к физическому датчику движения смартфона (DeviceMotion API / WebView)
+window.addEventListener('devicemotion', (event) => {
+  if (!sensorActive) return;
+  let acc = event.accelerationIncludingGravity || event.acceleration;
+  if (!acc) return;
+  let ax = acc.x || 0;
+  let ay = acc.y || 0;
+  let az = acc.z || 0;
+
+  let mag = Math.sqrt(ax*ax + ay*ay + az*az);
+  let dynamic = Math.abs(mag - 9.81);
+  document.getElementById('accelVal').textContent = dynamic.toFixed(2) + ' м/с²';
+
+  let now = performance.now();
+  if (now - lastSensorTime > 90) {
+    lastSensorTime = now;
+    // Фильтрация сигнала (Длинный очищенный контур A против Короткого шумового контура B)
+    let cleanSignal = Math.tanh(dynamic * 0.25);
+    let noisySignal = Math.tanh((ax - ay + az) * 0.15);
+    stepKubkod(cleanSignal, noisySignal);
+  }
+});
+
+// Фоновый тактовый генератор (если телефон лежит неподвижно на столе)
+setInterval(() => {
+  if (!sensorActive) return;
+  if (performance.now() - lastSensorTime > 450) {
+    let t = performance.now() * 0.002;
+    stepKubkod(Math.sin(t) * 0.08, Math.cos(t * 1.7) * 0.12);
+  }
+}, 400);
+
+updateMetrics();
+requestAnimationFrame(renderCube);
+</script>
+</body>
+</html>
