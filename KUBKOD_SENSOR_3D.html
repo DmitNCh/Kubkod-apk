@@ -283,7 +283,7 @@
       <button class="btn-block" onclick="pickNativeContact()">📱 ВЫБРАТЬ ИЗ ТЕЛЕФОНА</button>
       <button class="btn-block" onclick="document.getElementById('vcfFile').click()">📂 ИМПОРТ ФАЙЛА (.VCF)</button>
     </div>
-    <input id="vcfFile" type="file" accept=".vcf,text/vcard" style="display:none" onchange="importVcfFile(event)" />
+    <input id="vcfFile" type="file"  style="display:none" onchange="importVcfFile(event)" />
 
     <div id="contactStatus" style="font-size:11px; color:#82a8c9; margin:4px 0 8px 0;">
       Для массового переноса: в приложении «Контакты» телефона нажмите Экспорт в файл .vcf и выберите «Импорт файла (.VCF)».
@@ -404,7 +404,19 @@ function deleteContact(idx) {
 }
 
 // Прямой выбор контактов из телефонной книги Android (если поддерживается браузером/WebView)
+function onNativeContactPicked(name, phone) {
+  if (phone) {
+    contacts.unshift({ name: name || phone, phone: phone });
+    saveContactsToStorage();
+    document.getElementById('contactStatus').textContent = 'Перенесен контакт из телефона: ' + name + ' (' + phone + ')';
+  }
+}
+
 async function pickNativeContact() {
+  if (window.AndroidBridge && window.AndroidBridge.pickSystemContact) {
+    window.AndroidBridge.pickSystemContact();
+    return;
+  }
   if ('contacts' in navigator && 'ContactsManager' in window) {
     try {
       const props = ['name', 'tel'];
