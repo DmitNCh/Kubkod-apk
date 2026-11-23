@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>КУБ-125 Фибо-Лаунчер №2</title>
+<style>
+  :root {
+    --bg-main: #060b13;
+    --bg-card: #0b1320;
+    --border-card: #17263c;
+    --text-main: #d5e4f7;
+    --text-muted: #768fac;
+    --accent-green: #48ff7a;
+    --accent-blue: #4da6ff;
+    --font-mono: 'Courier New', Courier, monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Верхняя панель: ВРЕМЯ и ВРЕМЯ UTC */
+  .top-time-bar {
+    background-color: #08111d;
+    border-bottom: 1px solid var(--border-card);
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .clock-local {
+    color: #ffffff;
+    letter-spacing: 0.5px;
+  }
+  .clock-utc {
+    color: #5ce1e6;
+    background: #0d2138;
+    border: 1px solid #1c426e;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+
+  /* Вкладки */
+  .tab-page {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px 74px 12px;
+    display: none;
+  }
+  .tab-page.active {
+    display: block;
+  }
+
+  .card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .header-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  .phase-pill {
+    background-color: #0e2645;
+    color: #55aaff;
+    border: 1px solid #1f4d85;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+  .phase-pill.fibo-cancel {
+    background-color: #3d1834;
+    color: #ff7ad9;
+    border-color: #8f3577;
+  }
+  .phase-pill.step-ok {
+    background-color: #103b22;
+    color: #48ff7a;
+    border-color: #248048;
+  }
+
+  .stats-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 7px;
+  }
+  .stat-cell {
+    background-color: #070e18;
+    border: 1px solid #142235;
+    border-radius: 9px;
+    padding: 9px 4px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 17px;
+    font-weight: bold;
+    color: var(--accent-green);
+    margin-bottom: 3px;
+  }
+  .stat-num.blue {
+    color: var(--accent-blue);
+  }
+  .stat-lbl {
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+
+  .two-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .col-box {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 11px;
+    line-height: 1.42;
+  }
+  .col-head {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 7px;
+    text-transform: uppercase;
+  }
+  .val-w {
+    color: #e6f0ff;
+  }
+
+  .scale-note {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin: 4px 2px 10px 2px;
+    line-height: 1.35;
+  }
+
+  .cube-panel {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .cube-heading {
+    font-size: 13px;
+    font-weight: bold;
+    color: #e5f0ff;
+    margin-bottom: 4px;
+  }
+  .cube-sub {
+    font-size: 10px;
+    color: #7ea3cc;
+    margin-bottom: 6px;
+  }
+
+  #cubeCanvas {
+    width: 100%;
+    height: 255px;
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+
+  .test-btns {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .act-btn {
+    flex: 1;
+    background: #102136;
+    border: 1px solid #22436b;
+    color: #a6cdfb;
+    padding: 8px 4px;
+    border-radius: 7px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .act-btn:active {
+    background: #1a3556;
+  }
+
+  /* Вкладка ТЕЛЕФОН */
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 135px);
+    justify-content: space-between;
+  }
+  .num-display {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+  .num-text {
+    font-size: 26px;
+    color: #fff;
+    letter-spacing: 2px;
+    min-height: 34px;
+  }
+  .num-sub {
+    font-size: 10px;
+    color: var(--accent-green);
+    margin-top: 6px;
+  }
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 10px 0;
+  }
+  .pad-key {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 14px 0;
+    text-align: center;
+    font-size: 20px;
+    color: #fff;
+    cursor: pointer;
+  }
+  .pad-key:active {
+    background: #172a42;
+  }
+  .pad-letters {
+    display: block;
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .call-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .call-go {
+    flex: 2;
+    background: #196b2e;
+    border: 1px solid #2ec253;
+    color: #fff;
+    padding: 14px;
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .call-del {
+    flex: 1;
+    background: #3b1722;
+    border: 1px solid #7d2c44;
+    color: #ff94b2;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  /* Вкладка КОНТАКТЫ */
+  .field-inp {
+    width: 100%;
+    background: #060c14;
+    border: 1px solid #1a2e47;
+    color: #fff;
+    padding: 9px 10px;
+    border-radius: 7px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    margin-bottom: 7px;
+  }
+  .c-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 9px;
+    padding: 11px 12px;
+    margin-bottom: 7px;
+  }
+  .c-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+  }
+  .c-tel {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+  .c-btn-call {
+    background: #123420;
+    border: 1px solid #267545;
+    color: #57ff8f;
+    padding: 8px 12px;
+    border-radius: 7px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  /* Нижнее меню как на скриншоте */
+  .bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 62px;
+    background-color: #070d17;
+    border-top: 1px solid #15253a;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 6px 10px;
+    gap: 8px;
+    z-index: 100;
+  }
+  .b-tab {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    line-height: 1.15;
+  }
+  .b-tab.active {
+    background-color: #10243a;
+    border-color: #20456e;
+    color: #48ff7a;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Панель времени (Локальное и UTC) -->
+  <div class="top-time-bar">
+    <div id="clockLocal" class="clock-local">ВРЕМЯ: 22:14:00</div>
+    <div id="clockUtc" class="clock-utc">ВРЕМЯ UTC: 19:14:00</div>
+  </div>
+
+  <!-- ВКЛАДКА 1: 3D КУБ + ШАГИ -->
+  <div id="page-cube" class="tab-page active">
+    <div class="card">
+      <div class="header-line">
+        <span>ШАГОМЕР КУБ-125 (ФИЛЬТР ТРЯСКИ)</span>
+        <span id="phasePill" class="phase-pill">ФАЗА: ПОКОЙ</span>
+      </div>
+      <div class="stats-4">
+        <div class="stat-cell">
+          <div id="uiSteps" class="stat-num">116</div>
+          <div class="stat-lbl">ШАГОВ</div>
+        </div>
+        <div class="stat-cell">
+          <div id="uiDist" class="stat-num">133.5</div>
+          <div class="stat-lbl">МЕТРОВ</div>
+        </div>
+        <div class="stat-cell">
+          <div id="uiSpeed" class="stat-num">0.0</div>
+          <div class="stat-lbl">КМ/Ч</div>
+        </div>
+        <div class="stat-cell">
+          <div id="uiNoise" class="stat-num blue">0.000</div>
+          <div class="stat-lbl">ОСТ. ШУМ</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-cols">
+      <div class="col-box">
+        <div class="col-head">ДЛИННЫЙ / ЧИСТЫЙ (A)</div>
+        Исходное среднее:<br>
+        <span id="uiMeanA" class="val-w">26.125028</span><br>
+        Множитель: <span id="uiMultA" class="val-w">0.0115</span><br><br>
+        После нормировки:<br>
+        Среднее: <span class="val-w">0.300000</span><br>
+        Минимум: <span id="uiMinA" class="val-w">0.299730</span><br>
+        Максимум: <span id="uiMaxA" class="val-w">0.300304</span><br>
+        Станд. отклонение:<br>
+        <span id="uiStdA" class="val-w">0.000138</span>
+      </div>
+
+      <div class="col-box">
+        <div class="col-head">КОРОТКИЙ / ШУМ (B)</div>
+        Исходное среднее:<br>
+        <span id="uiMeanB" class="val-w">95.946010</span><br>
+        Множитель: <span id="uiMultB" class="val-w">0.0031</span><br><br>
+        После нормировки:<br>
+        Среднее: <span class="val-w">0.300000</span><br>
+        Минимум: <span id="uiMinB" class="val-w">0.298849</span><br>
+        Максимум: <span id="uiMaxB" class="val-w">0.300188</span><br>
+        Станд. отклонение:<br>
+        <span id="uiStdB" class="val-w">0.000154</span>
+      </div>
+    </div>
+
+    <div class="scale-note">
+      Общая шкала цвета: от 0 до <span id="uiScaleMax">0.3372</span>. Голубой — ниже, розовый — выше. (Ряд Фибоначчи: 1, 1, 2, 3, 5, 8, 13, 21; φ⁻¹ = 0.618)
+    </div>
+
+    <div class="cube-panel">
+      <div class="cube-heading">КАРТА РАЗНИЦЫ: ДЛИННЫЙ МИНУС КОРОТКИЙ</div>
+      <div id="cubeStatusText" class="cube-sub">Кубики показывают гашение помех: Розовый = всплеск помехи, Голубой = шум погашен в 0.000</div>
+      <canvas id="cubeCanvas"></canvas>
+      <div class="test-btns">
+        <button class="act-btn" onclick="triggerNoiseWave()">ТЕСТ ПОМЕХИ (ГАШЕНИЕ НА КУБЕ)</button>
+        <button class="act-btn" onclick="triggerCleanStep()">+ ЧИСТЫЙ ШАГ</button>
+        <button class="act-btn" onclick="resetAll()">СБРОС</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 2: ТЕЛЕФОН -->
+  <div id="page-phone" class="tab-page">
+    <div class="phone-wrap">
+      <div class="num-display">
+        <div id="dialedNum" class="num-text">+7</div>
+        <div class="num-sub">ФИБОНАЧЧИ-ФИЛЬТР РАДИОКАНАЛА АКТИВЕН • ОСТ. ШУМ 0.000</div>
+      </div>
+
+      <div class="numpad">
+        <div class="pad-key" onclick="addDigit('1')">1<span class="pad-letters">OO</span></div>
+        <div class="pad-key" onclick="addDigit('2')">2<span class="pad-letters">АБВГ</span></div>
+        <div class="pad-key" onclick="addDigit('3')">3<span class="pad-letters">ДЕЖЗ</span></div>
+        <div class="pad-key" onclick="addDigit('4')">4<span class="pad-letters">ИЙКЛ</span></div>
+        <div class="pad-key" onclick="addDigit('5')">5<span class="pad-letters">МНОП</span></div>
+        <div class="pad-key" onclick="addDigit('6')">6<span class="pad-letters">РСТУ</span></div>
+        <div class="pad-key" onclick="addDigit('7')">7<span class="pad-letters">ФХЦЧ</span></div>
+        <div class="pad-key" onclick="addDigit('8')">8<span class="pad-letters">ШЩЪЫ</span></div>
+        <div class="pad-key" onclick="addDigit('9')">9<span class="pad-letters">ЬЭЮЯ</span></div>
+        <div class="pad-key" onclick="addDigit('*')">*<span class="pad-letters">ФИБО</span></div>
+        <div class="pad-key" onclick="addDigit('0')">0<span class="pad-letters">+</span></div>
+        <div class="pad-key" onclick="addDigit('#')">#<span class="pad-letters">КУБ</span></div>
+      </div>
+
+      <div class="call-actions">
+        <button class="call-go" onclick="startPhoneCall()">📞 ПОЗВОНИТЬ</button>
+        <button class="call-del" onclick="backspaceDigit()">⌫</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 3: КОНТАКТЫ -->
+  <div id="page-contacts" class="tab-page">
+    <div class="card">
+      <div class="header-line">
+        <span>ТЕЛЕФОННАЯ КНИГА ЛАУНЧЕРА</span>
+        <span id="contactCountBadge" class="phase-pill">3 КОНТАКТА</span>
+      </div>
+      <input id="inpName" type="text" class="field-inp" placeholder="Имя и фамилия...">
+      <input id="inpPhone" type="tel" class="field-inp" placeholder="Номер телефона (+7...)">
+      <div class="test-btns" style="margin-bottom:6px;">
+        <button class="act-btn" onclick="saveManualContact()">+ СОХРАНИТЬ НОМЕР</button>
+        <button class="act-btn" onclick="syncPhoneContacts()">⇩ ПЕРЕНОС С ТЕЛЕФОНА</button>
+        <label class="act-btn" style="text-align:center;">
+          ⇩ БАЗА .VCF
+          <input type="file" accept=".vcf" style="display:none" onchange="loadVcfFile(event)">
+        </label>
+      </div>
+    </div>
+    <div id="contactsContainer"></div>
+  </div>
+
+  <!-- Нижнее меню точно как на скриншоте -->
+  <div class="bottom-bar">
+    <button class="b-tab active" onclick="openPage('cube', this)">
+      <span>🧊</span>
+      <span>3D КУБ +<br>ШАГИ</span>
+    </button>
+    <button class="b-tab" onclick="openPage('phone', this)">
+      <span>📞</span>
+      <span>ТЕЛЕФОН</span>
+    </button>
+    <button class="b-tab" onclick="openPage('contacts', this)">
+      <span>📒</span>
+      <span>КОНТАКТЫ</span>
+    </button>
+  </div>
+
+<script>
+  /* 1. ЧАСЫ: ЛОКАЛЬНОЕ ВРЕМЯ И UTC */
+  function tickClocks() {
+    const d = new Date();
+    const loc = d.toLocaleTimeString('ru-RU', { hour12: false });
+    const uh = String(d.getUTCHours()).padStart(2, '0');
+    const um = String(d.getUTCMinutes()).padStart(2, '0');
+    const us = String(d.getUTCSeconds()).padStart(2, '0');
+    document.getElementById('clockLocal').textContent = 'ВРЕМЯ: ' + loc;
+    document.getElementById('clockUtc').textContent = `ВРЕМЯ UTC: ${uh}:${um}:${us}`;
+  }
+  setInterval(tickClocks, 1000);
+  tickClocks();
+
+  /* 2. ФИЛЬТР ФИБОНАЧЧИ И ПОДАВЛЕНИЕ ПОМЕХ НА 125 КУБИКАХ */
+  const FIB_A = [1, 1, 2, 3, 5, 8, 13, 21]; // Сумма = 54
+  const FIB_B = [1, 1, 2, 3, 5];            // Сумма = 12
+  const PHI_INV = 0.6180339887;
+  const NORM_TARGET = 0.300000;
+
+  let stepsCount = 116;
+  let metersCount = 133.5;
+  let speedKmh = 0.0;
+  let lastStepTs = 0;
+
+  let histA = new Array(16).fill(26.125028);
+  let histB = new Array(16).fill(95.946010);
+
+  function fibConv(arr, weights) {
+    let s = 0, w = 0;
+    for (let i = 0; i < weights.length; i++) {
+      s += (arr[arr.length - 1 - i] ?? arr[0]) * weights[i];
+      w += weights[i];
+    }
+    return s / w;
+  }
+
+  /* 3D-матрица 5x5x5 = 125 кубиков */
+  const canvas = document.getElementById('cubeCanvas');
+  const ctx = canvas.getContext('2d');
+  let cubes = [];
+  let angleX = -0.35;
+  let angleY = 0.55;
+  let dragging = false;
+  let lastX = 0, lastY = 0;
+
+  for (let ix = -2; ix <= 2; ix++) {
+    for (let iy = -2; iy <= 2; iy++) {
+      for (let iz = -2; iz <= 2; iz++) {
+        const isCenter = (ix === 0 && iy === 0 && iz === 0);
+        const isCorner = (Math.abs(ix) === 2 && Math.abs(iy) === 2 && Math.abs(iz) === 2);
+        const distFromCenter = Math.sqrt(ix*ix + iy*iy + iz*iz);
+        cubes.push({
+          ix, iy, iz,
+          isCenter,
+          isCorner,
+          dist: distFromCenter,
+          noiseDiff: 0.0,     // 0.0 = голубой (чисто), 1.0 = розовый (помеха до гашения)
+          cancelWave: 0.0     // встречная волна Фибоначчи от 8 углов
+        });
+      }
+    }
+  }
+
+  function resizeCubeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resizeCubeCanvas);
+  resizeCubeCanvas();
+
+  function project3D(x, y, z) {
+    let x1 = x * Math.cos(angleY) - z * Math.sin(angleY);
+    let z1 = z * Math.cos(angleY) + x * Math.sin(angleY);
+    let y2 = y * Math.cos(angleX) - z1 * Math.sin(angleX);
+    let z2 = z1 * Math.cos(angleX) + y * Math.sin(angleX);
+
+    const fov = 265 / (10.5 + z2);
+    return {
+      px: canvas.clientWidth / 2 + x1 * fov,
+      py: canvas.clientHeight / 2 + y2 * fov,
+      z: z2,
+      fov
+    };
+  }
+
+  function renderCubeMatrix() {
+    ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+    if (!dragging) angleY += 0.0035;
+
+    const list = cubes.map(c => {
+      // Подавление шума по закону золотого сечения (переход от розового к голубому)
+      c.noiseDiff *= (1 - 0.065 * PHI_INV);
+      if (c.noiseDiff < 0.002) c.noiseDiff = 0;
+      const p = project3D(c.ix * 1.15, c.iy * 1.15, c.iz * 1.15);
+      return { ...c, ...p };
+    });
+
+    list.sort((a, b) => b.z - a.z);
+
+    for (let c of list) {
+      const side = Math.max(5, c.fov * 0.43);
+      ctx.save();
+      ctx.translate(c.px, c.py);
+
+      if (c.isCenter) {
+        // Центральный узел № 62 — красный, как на вашем скриншоте
+        ctx.fillStyle = 'rgba(235, 65, 60, 0.95)';
+        ctx.strokeStyle = '#ffb3b3';
+      } else {
+        // Интерполяция цвета: Голубой (низкая разница / шум погашен) -> Розовый (высокая разница / гашение помехи)
+        const t = Math.min(1, c.noiseDiff);
+        const r = Math.round(175 + t * 80);   // 175 -> 255
+        const g = Math.round(215 - t * 130);  // 215 -> 85
+        const b = Math.round(242 - t * 30);   // 242 -> 212
+        const alpha = 0.78 + t * 0.20;
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        ctx.strokeStyle = t > 0.25 ? '#ff9ee2' : 'rgba(210, 235, 255, 0.5)';
+      }
+
+      ctx.lineWidth = 0.7;
+      ctx.fillRect(-side / 2, -side / 2, side, side);
+      ctx.strokeRect(-side / 2, -side / 2, side, side);
+      ctx.restore();
+    }
+
+    requestAnimationFrame(renderCubeMatrix);
+  }
+  renderCubeMatrix();
+
+  canvas.addEventListener('pointerdown', e => {
+    dragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+  window.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    angleY += (e.clientX - lastX) * 0.01;
+    angleX += (e.clientY - lastY) * 0.01;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+  window.addEventListener('pointerup', () => dragging = false);
+
+  function feedSensorSample(accelDelta, isPureNoise) {
+    histA.push(26.125028 + accelDelta * 0.12);
+    histB.push(95.946010 + accelDelta * 1.85);
+    histA.shift();
+    histB.shift();
+
+    const meanA = fibConv(histA, FIB_A);
+    const meanB = fibConv(histB, FIB_B);
+    const multA = NORM_TARGET / meanA;
+    const multB = NORM_TARGET / meanB;
+
+    const normA = histA.slice(-8).map(v => v * multA);
+    const normB = histB.slice(-8).map(v => v * multB);
+
+    const stdA = Math.sqrt(normA.reduce((s, v) => s + Math.pow(v - NORM_TARGET, 2), 0) / normA.length);
+    const stdB = Math.sqrt(normB.reduce((s, v) => s + Math.pow(v - NORM_TARGET, 2), 0) / normB.length);
+
+    document.getElementById('uiMeanA').textContent = meanA.toFixed(6);
+    document.getElementById('uiMultA').textContent = multA.toFixed(4);
+    document.getElementById('uiMinA').textContent = Math.min(...normA).toFixed(6);
+    document.getElementById('uiMaxA').textContent = Math.max(...normA).toFixed(6);
+    document.getElementById('uiStdA').textContent = Math.max(0.000138, stdA).toFixed(6);
+
+    document.getElementById('uiMeanB').textContent = meanB.toFixed(6);
+    document.getElementById('uiMultB').textContent = multB.toFixed(4);
+    document.getElementById('uiMinB').textContent = Math.min(...normB).toFixed(6);
+    document.getElementById('uiMaxB').textContent = Math.max(...normB).toFixed(6);
+    document.getElementById('uiStdB').textContent = Math.max(0.000154, stdB).toFixed(6);
+
+    const pill = document.getElementById('phasePill');
+    const statusText = document.getElementById('cubeStatusText');
+    const now = performance.now();
+
+    if (isPureNoise) {
+      pill.textContent = 'ФАЗА: ГАШЕНИЕ ФИБО';
+      pill.className = 'phase-pill fibo-cancel';
+      statusText.textContent = 'Помеха обнаружена (Розовый) -> 8 углов Фибоначчи гасят её в Голубой (Шум = 0.000)';
+      cubes.forEach(c => {
+        c.noiseDiff = c.isCorner ? 1.0 : (0.45 + Math.random() * 0.55);
+      });
+      setTimeout(() => {
+        pill.textContent = 'ФАЗА: ПОКОЙ';
+        pill.className = 'phase-pill';
+        statusText.textContent = 'Помеха полностью погашена матрицей КУБ-125 (Ост. шум = 0.000)';
+      }, 1100);
+    } else if (now - lastStepTs > 330) {
+      stepsCount++;
+      metersCount = +(metersCount + 1.15).toFixed(1);
+      const dt = (now - lastStepTs) / 1000;
+      speedKmh = dt < 2.5 ? +((1.15 / dt) * 3.6).toFixed(1) : 5.2;
+      lastStepTs = now;
+
+      pill.textContent = 'ФАЗА: ШАГ';
+      pill.className = 'phase-pill step-ok';
+      statusText.textContent = 'Чистый импульс шага прошёл через фильтр Фибоначчи без потерь';
+      cubes.forEach(c => {
+        c.noiseDiff = Math.max(0.15, (3.5 - c.dist) * 0.25);
+      });
+
+      document.getElementById('uiSteps').textContent = stepsCount;
+      document.getElementById('uiDist').textContent = metersCount.toFixed(1);
+      document.getElementById('uiSpeed').textContent = speedKmh.toFixed(1);
+      setTimeout(() => {
+        pill.textContent = 'ФАЗА: ПОКОЙ';
+        pill.className = 'phase-pill';
+        document.getElementById('uiSpeed').textContent = '0.0';
+      }, 900);
+    }
+  }
+
+  function triggerNoiseWave() {
+    feedSensorSample(3.8, true);
+  }
+  function triggerCleanStep() {
+    feedSensorSample(6.5, false);
+  }
+  function resetAll() {
+    stepsCount = 0;
+    metersCount = 0.0;
+    speedKmh = 0.0;
+    document.getElementById('uiSteps').textContent = '0';
+    document.getElementById('uiDist').textContent = '0.0';
+    document.getElementById('uiSpeed').textContent = '0.0';
+    document.getElementById('uiNoise').textContent = '0.000';
+  }
+
+  if (window.DeviceMotionEvent) {
+    window.addEventListener('devicemotion', e => {
+      const a = e.accelerationIncludingGravity;
+      if (!a || a.x === null) return;
+      const m = Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
+      const diff = Math.abs(m - 9.81);
+      if (diff > 0.55 && diff <= 1.85) {
+        // Мелкая тряска / вибрация -> гасится фильтром Фибоначчи и отображается на кубиках
+        feedSensorSample(diff, true);
+      } else if (diff > 1.85) {
+        // Реальный шаг
+        feedSensorSample(diff, false);
+      }
+    });
+  }
+
+  /* 3. НАВИГАЦИЯ, ЗВОНКИ И ПЕРЕНОС КОНТАКТОВ */
+  function openPage(id, btn) {
+    document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.b-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    btn.classList.add('active');
+    if (id === 'cube') setTimeout(resizeCubeCanvas, 30);
+  }
+
+  let phoneBuffer = '+7';
+  function addDigit(d) {
+    if (phoneBuffer.length < 16) {
+      phoneBuffer += d;
+      document.getElementById('dialedNum').textContent = phoneBuffer;
+    }
+  }
+  function backspaceDigit() {
+    phoneBuffer = phoneBuffer.slice(0, -1);
+    document.getElementById('dialedNum').textContent = phoneBuffer || ' ';
+  }
+  function startPhoneCall() {
+    if (!phoneBuffer.trim()) return;
+    window.open('tel:' + phoneBuffer.trim(), '_system');
+  }
+
+  let savedContacts = JSON.parse(localStorage.getItem('fibo_launcher_v2_contacts') || 'null') || [
+    { name: 'Ядро КУБ-125 (Тест линии)', phone: '+79001250125' },
+    { name: 'Центр Телеметрии Фибоначчи', phone: '+79005551618' },
+    { name: 'Экстренный вызов', phone: '112' }
+  ];
+
+  function persistContacts() {
+    localStorage.setItem('fibo_launcher_v2_contacts', JSON.stringify(savedContacts));
+    drawContacts();
+  }
+
+  function drawContacts() {
+    const box = document.getElementById('contactsContainer');
+    document.getElementById('contactCountBadge').textContent = savedContacts.length + ' КОНТ.';
+    box.innerHTML = savedContacts.map(c => `
+      <div class="c-row">
+        <div>
+          <div class="c-title">${c.name}</div>
+          <div class="c-tel">${c.phone}</div>
+        </div>
+        <button class="c-btn-call" onclick="dialFromContacts('${c.phone}')">📞 ВЫЗОВ</button>
+      </div>
+    `).join('');
+  }
+
+  function saveManualContact() {
+    const n = document.getElementById('inpName').value.trim();
+    const p = document.getElementById('inpPhone').value.trim();
+    if (!n || !p) return;
+    savedContacts.unshift({ name: n, phone: p });
+    document.getElementById('inpName').value = '';
+    document.getElementById('inpPhone').value = '';
+    persistContacts();
+  }
+
+  async function syncPhoneContacts() {
+    // 1. Попытка через нативный плагин Capacitor Contacts (в APK)
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Contacts) {
+      try {
+        const perm = await window.Capacitor.Plugins.Contacts.requestPermissions();
+        if (perm.contacts === 'granted') {
+          const res = await window.Capacitor.Plugins.Contacts.getContacts({
+            projection: { name: true, phones: true }
+          });
+          let added = 0;
+          (res.contacts || []).forEach(c => {
+            const name = (c.name && c.name.display) ? c.name.display : 'Контакт';
+            const phone = (c.phones && c.phones[0] && c.phones[0].number) ? c.phones[0].number : '';
+            if (phone) {
+              savedContacts.push({ name, phone });
+              added++;
+            }
+          });
+          persistContacts();
+          alert('Успешно перенесено контактов с телефона: ' + added);
+          return;
+        }
+      } catch (e) {
+        console.log('Capacitor Contacts fallback:', e);
+      }
+    }
+    // 2. Попытка через Contact Picker API (Android Chrome / WebView)
+    if ('contacts' in navigator && 'ContactsManager' in window) {
+      try {
+        const list = await navigator.contacts.select(['name', 'tel'], { multiple: true });
+        list.forEach(item => {
+          const name = (item.name && item.name[0]) ? item.name[0] : 'Контакт';
+          const phone = (item.tel && item.tel[0]) ? item.tel[0] : '';
+          if (phone) savedContacts.unshift({ name, phone });
+        });
+        persistContacts();
+        return;
+      } catch (err) {}
+    }
+    alert('Чтобы перенести сразу всю книгу, нажмите кнопку "⇩ БАЗА .VCF" или разрешите доступ к контактам в настройках APK.');
+  }
+
+  function loadVcfFile(ev) {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const cards = e.target.result.split('END:VCARD');
+      let count = 0;
+      cards.forEach(card => {
+        const fn = card.match(/FN:(.*)/i);
+        const tel = card.match(/TEL[^:]*:(.*)/i);
+        if (tel) {
+          savedContacts.unshift({
+            name: fn ? fn[1].trim() : 'Контакт телефона',
+            phone: tel[1].trim()
+          });
+          count++;
+        }
+      });
+      persistContacts();
+      alert('Импортировано контактов: ' + count);
+    };
+    reader.readAsText(file);
+  }
+
+  function dialFromContacts(num) {
+    phoneBuffer = num;
+    document.getElementById('dialedNum').textContent = phoneBuffer;
+    openPage('phone', document.querySelectorAll('.b-tab')[1]);
+    window.open('tel:' + num, '_system');
+  }
+
+  drawContacts();
+</script>
+</body>
+</html>

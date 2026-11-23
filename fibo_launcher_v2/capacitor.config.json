@@ -1,0 +1,6 @@
+{
+  "appId": "ru.cubecode.fibolauncher2",
+  "appName": "КУБ-125 Фибо Лаунчер 2",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
